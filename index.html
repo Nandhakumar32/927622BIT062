@@ -1,0 +1,572 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stock Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            background-color: #f8fafc;
+            padding: 20px;
+            color: #1e293b;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            color: #0f172a;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .header p {
+            color: #64748b;
+            font-size: 1.1rem;
+        }
+
+        .dashboard {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 30px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
+            padding: 24px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .card-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: #0f172a;
+        }
+
+        .btn {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            margin-bottom: 20px;
+            width: 100%;
+            font-size: 14px;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn:hover {
+            background: #2563eb;
+            transform: translateY(-1px);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn .loader {
+            width: 16px;
+            height: 16px;
+            border: 2px solid transparent;
+            border-top: 2px solid currentColor;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .stock-item {
+            padding: 16px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: white;
+        }
+
+        .stock-item:hover {
+            border-color: #cbd5e1;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        }
+
+        .stock-item.selected {
+            border-color: #3b82f6;
+            background: #eff6ff;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .stock-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .stock-info {
+            flex: 1;
+        }
+
+        .stock-symbol {
+            font-weight: 600;
+            color: #0f172a;
+            font-size: 16px;
+            margin-bottom: 4px;
+        }
+
+        .stock-price {
+            color: #64748b;
+            font-size: 14px;
+        }
+
+        .stock-change {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .badge {
+            padding: 4px 12px;
+            border-radius: 16px;
+            font-size: 12px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .badge.positive {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .badge.negative {
+            background: #fecaca;
+            color: #dc2626;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: #f8fafc;
+            padding: 16px;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .stat-label {
+            font-size: 14px;
+            color: #64748b;
+            margin-bottom: 8px;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: #0f172a;
+        }
+
+        .stat-value.positive {
+            color: #059669;
+        }
+
+        .stat-value.negative {
+            color: #dc2626;
+        }
+
+        .chart-container {
+            height: 320px;
+            margin-top: 20px;
+        }
+
+        .loading {
+            text-align: center;
+            color: #64748b;
+            padding: 40px;
+            font-style: italic;
+        }
+
+        .icon {
+            width: 16px;
+            height: 16px;
+            display: inline-block;
+        }
+
+        .trend-up {
+            color: #059669;
+        }
+
+        .trend-down {
+            color: #dc2626;
+        }
+
+        @media (max-width: 768px) {
+            .dashboard {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📈 Stock Dashboard</h1>
+            <p>Real-time stock price tracking</p>
+        </div>
+
+        <div class="dashboard">
+            <!-- Stock List -->
+            <div class="card">
+                <h2 class="card-title">Stocks</h2>
+                <button class="btn" onclick="refreshData()" id="refreshBtn">
+                    <span class="btn-text">Refresh Data</span>
+                </button>
+                <div id="stockList"></div>
+            </div>
+
+            <!-- Chart -->
+            <div class="card">
+                <h2 class="card-title" id="chartTitle">Select a Stock</h2>
+                <div id="stockStats" style="display: none;">
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-label">Current Price</div>
+                            <div class="stat-value" id="currentPrice">$0.00</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">Change</div>
+                            <div class="stat-value" id="priceChange">0.00%</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="priceChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        const stocks = ["AAPL", "GOOGL", "MSFT", "AMZN", "TSLA"];
+        let stockData = {};
+        let selectedStock = null;
+        let chart = null;
+        let loading = false;
+
+        // Stock company names
+        const stockNames = {
+            "AAPL": "Apple Inc.",
+            "GOOGL": "Alphabet Inc.",
+            "MSFT": "Microsoft Corp.",
+            "AMZN": "Amazon.com Inc.",
+            "TSLA": "Tesla Inc."
+        };
+
+        // Initialize the dashboard
+        function init() {
+            console.log("Initializing Stock Dashboard...");
+            generateDemoData();
+            renderStockList();
+            
+            // Auto-select first stock
+            if (stocks.length > 0) {
+                selectStock(stocks[0]);
+            }
+        }
+
+        // Generate realistic demo data
+        function generateDemoData() {
+            console.log("Generating demo stock data...");
+            stockData = {};
+            
+            stocks.forEach(stock => {
+                // Different base prices for different stocks
+                const basePrices = {
+                    "AAPL": 175,
+                    "GOOGL": 140,
+                    "MSFT": 380,
+                    "AMZN": 145,
+                    "TSLA": 240
+                };
+                
+                const basePrice = basePrices[stock] || (Math.random() * 200 + 50);
+                const prices = [];
+                let currentPrice = basePrice;
+                
+                // Generate 30 data points for more realistic chart
+                for (let i = 0; i < 30; i++) {
+                    const variation = (Math.random() - 0.5) * 8;
+                    currentPrice += variation;
+                    currentPrice = Math.max(10, currentPrice); // Prevent negative prices
+                    
+                    const time = new Date();
+                    time.setMinutes(time.getMinutes() - (30 - i) * 10); // 10 minute intervals
+                    
+                    prices.push({
+                        time: time.toLocaleTimeString('en-US', { 
+                            hour: '2-digit', 
+                            minute: '2-digit' 
+                        }),
+                        price: currentPrice,
+                        timestamp: time.getTime()
+                    });
+                }
+                
+                const firstPrice = prices[0].price;
+                const lastPrice = prices[prices.length - 1].price;
+                const change = ((lastPrice - firstPrice) / firstPrice) * 100;
+                
+                stockData[stock] = {
+                    currentPrice: lastPrice.toFixed(2),
+                    change: change.toFixed(2),
+                    prices: prices,
+                    name: stockNames[stock] || stock
+                };
+            });
+        }
+
+        // Render stock list
+        function renderStockList() {
+            const stockList = document.getElementById('stockList');
+            stockList.innerHTML = '';
+
+            stocks.forEach(stock => {
+                const data = stockData[stock];
+                if (!data) return;
+
+                const isPositive = parseFloat(data.change) >= 0;
+                const arrow = isPositive ? '↗' : '↘';
+                
+                const stockItem = document.createElement('div');
+                stockItem.className = `stock-item ${selectedStock === stock ? 'selected' : ''}`;
+                stockItem.onclick = () => selectStock(stock);
+                
+                stockItem.innerHTML = `
+                    <div class="stock-header">
+                        <div class="stock-info">
+                            <div class="stock-symbol">${stock}</div>
+                            <div class="stock-price">$${data.currentPrice}</div>
+                        </div>
+                        <div class="stock-change">
+                            <span class="badge ${isPositive ? 'positive' : 'negative'}">
+                                <span class="icon ${isPositive ? 'trend-up' : 'trend-down'}">${arrow}</span>
+                                ${isPositive ? '+' : ''}${data.change}%
+                            </span>
+                        </div>
+                    </div>
+                `;
+                
+                stockList.appendChild(stockItem);
+            });
+        }
+
+        // Select a stock
+        function selectStock(stock) {
+            console.log(`Selecting stock: ${stock}`);
+            selectedStock = stock;
+            renderStockList();
+            updateChart(stock);
+            updateStats(stock);
+        }
+
+        // Update chart
+        function updateChart(stock) {
+            const data = stockData[stock];
+            if (!data) return;
+
+            document.getElementById('chartTitle').textContent = `${stock} - ${data.name}`;
+            
+            const ctx = document.getElementById('priceChart').getContext('2d');
+            
+            if (chart) {
+                chart.destroy();
+            }
+
+            const isPositive = parseFloat(data.change) >= 0;
+            const chartColor = isPositive ? '#059669' : '#dc2626';
+
+            chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: data.prices.map(p => p.time),
+                    datasets: [{
+                        label: 'Price ($)',
+                        data: data.prices.map(p => p.price),
+                        borderColor: chartColor,
+                        backgroundColor: isPositive ? 'rgba(5, 150, 105, 0.1)' : 'rgba(220, 38, 38, 0.1)',
+                        borderWidth: 3,
+                        fill: true,
+                        tension: 0.4,
+                        pointBackgroundColor: chartColor,
+                        pointBorderColor: chartColor,
+                        pointRadius: 4,
+                        pointHoverRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                            titleColor: 'white',
+                            bodyColor: 'white',
+                            borderColor: chartColor,
+                            borderWidth: 1,
+                            callbacks: {
+                                label: function(context) {
+                                    return `Price: $${context.parsed.y.toFixed(2)}`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            grid: {
+                                color: '#e2e8f0'
+                            },
+                            ticks: {
+                                color: '#64748b',
+                                callback: function(value) {
+                                    return '$' + value.toFixed(2);
+                                }
+                            }
+                        },
+                        x: {
+                            grid: {
+                                color: '#e2e8f0'
+                            },
+                            ticks: {
+                                color: '#64748b',
+                                maxTicksLimit: 8
+                            }
+                        }
+                    },
+                    interaction: {
+                        intersect: false,
+                        mode: 'index'
+                    }
+                }
+            });
+        }
+
+        // Update stats
+        function updateStats(stock) {
+            const data = stockData[stock];
+            if (!data) return;
+
+            document.getElementById('stockStats').style.display = 'block';
+            document.getElementById('currentPrice').textContent = `$${data.currentPrice}`;
+            
+            const changeElement = document.getElementById('priceChange');
+            const isPositive = parseFloat(data.change) >= 0;
+            changeElement.textContent = `${isPositive ? '+' : ''}${data.change}%`;
+            changeElement.className = `stat-value ${isPositive ? 'positive' : 'negative'}`;
+        }
+
+        // Refresh data with loading animation
+        function refreshData() {
+            if (loading) return;
+            
+            console.log("Refreshing stock data...");
+            loading = true;
+            const btn = document.getElementById('refreshBtn');
+            const btnText = btn.querySelector('.btn-text');
+            
+            btnText.innerHTML = '<div class="loader"></div> Loading...';
+            btn.disabled = true;
+
+            // Simulate API call delay
+            setTimeout(() => {
+                generateDemoData();
+                renderStockList();
+                
+                if (selectedStock) {
+                    updateChart(selectedStock);
+                    updateStats(selectedStock);
+                }
+                
+                loading = false;
+                btnText.textContent = 'Refresh Data';
+                btn.disabled = false;
+                
+                console.log("Data refresh completed!");
+            }, 1500);
+        }
+
+        // Auto-refresh every 30 seconds
+        setInterval(() => {
+            if (!loading) {
+                console.log("Auto-refreshing data...");
+                generateDemoData();
+                renderStockList();
+                
+                if (selectedStock) {
+                    updateChart(selectedStock);
+                    updateStats(selectedStock);
+                }
+            }
+        }, 30000);
+
+        // Initialize when page loads
+        window.addEventListener('load', init);
+        
+        // Add some interactivity
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'r' || e.key === 'R') {
+                refreshData();
+            }
+        });
+
+        console.log("Stock Dashboard script loaded successfully!");
+    </script>
+</body>
+</html>
